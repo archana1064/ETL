@@ -1,0 +1,50 @@
+
+In this job guest id, first name and last Name are coming from ADW database from table ADW.GST_RUV. Then on the basis of guest id will be taking postal code from the table ADW.GIFP_CURR_SUV .And in the same way from ADW.ACTV_EMAIL_RUV table one sequence number to take the email id from ADW.ACTV_EMAIL_RUV table. Before taking the email id will be removing he duplicate email id’s from his table .And finally all the active guest information will be loaded into Seq_Active_Guest.txt sequential file on the ETL server GMETLPROD/GRMETLTEST02.
+
+
+
+Description
+DB2_GST_RUV
+This is the source DB2 where we are picking the active guests data from ADW using the below query.
+SELECT GST_I,
+PRIM_FRST_N,
+PRIM_LAST_N 
+FROM ADW.GST_RUV
+WHERE GST_I IN
+(SELECT GST_I 
+FROM ADW.GIFS_G_OVRLL_CUV 
+WHERE ADW.GIFS_G_OVRLL_CUV.MDSE_ADJD_A_3 > 0)
+AND GST_I NOT IN
+(SELECT GST_I FROM ADW.TGT_EMP_SUV) WITH UR
+
+
+
+Lkp_PSTL_CD
+******************
+Here in this lookup we taking the column from PSTL_C from ADW.GIFP_CURR_SUV table on
+GST_I column.
+
+Lkp_SEQ_I
+**************
+This lookup is used to take EMAIL_ADDR_SEQ_I from ADW.GST_EMAIL_ADDR_SUV table on the 
+basis of GST_I. This column will be used take EMAIL_ADDR_I from ADW.ACTV_EMAIL_RUV table 
+in the next stage.
+
+RDUP_EMAIL_ADDR_I
+**********************
+This is a remove duplicate stage .In this we are removing the duplicate email id’s from the 
+ADW.ACTV_EMAIL_RUV table on the basis of EMAIL_ADDR_I column.
+
+Lkp_EMAIL_ADDR
+********************
+Here we are taking the EMAIL_ADDR_I column from ADW.ACTV_EMAIL_RUV on the basis 
+of EMAIL_ADDR_SEQ_I .
+              
+COPY_RENAME
+*********************
+Copy stage is used to rename the columns as per the target requirement.
+
+SEQL_OUTPUT
+This is the target sequential file Seq_Active_Guest.txt will be present in 
+/work/ADWODS/data_in/processing path of the GRMETLTEST02/GRMETLPROD server 
+after successful  execution of the job. The file will be tab delimited and of fixed length.
